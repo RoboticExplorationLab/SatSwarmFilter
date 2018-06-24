@@ -14,11 +14,11 @@ for idx = 1:n
     x{idx,2} = X(2*m*(idx-1)+m+1 : 2*m*idx); %Velocity vector
 end
 
-g(1) = x{1,1}.'*x{1,2}/norm(x{1,1});
+g = [x{1,1};x{1,2}]; %Hub position & velocity
 for idx = 2:n
-    g(idx) = (x{idx,1} - x{1,1}).' * (x{idx,2} - x{1,2}) / norm(x{idx,1} - x{1,1});
+    DistN = norm(x{idx,1} - x{1,1}); %Distance to hub for satellite idx
+    g = [g;DistN];
 end
 % v = sqrtm(R)*randn(n,1); %Gaussian Noise
 % g = g + v; %Add Gaussian Noise
-
 end

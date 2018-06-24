@@ -1,28 +1,48 @@
 clear
 clc
 N0 = 3; %Size of each target state
-M = 4; %Number of total ships
+M = 9; %Number of total ships
 N = 2*M*N0; %Size of total state
 I = eye(N);
 L = M*N0; %Size of observation
 
+delT = minutes(1); %Timestep in minutes
+lambda = 2; %UKF parameter
+NOrbitSim = 3; %Number of orbits to be simulated
+global muE muM
+const = s3_constants;
+muE = const.GM.EARTH/(1e3)^3; %km^3/s^2
+muM = const.GM.MOON/(1e3)^3; %km^3/s^2
 
-delT = 1;
-lambda = 2;
-Q = .1*I*delT;
-R = .1;
+OE0 = [243729.554542e3,0.598335,51.975,61.110,247.345,0.000]; %Initial OE for hub in m
+X0 = s3_state_keptocart(OE0, 1)/1e3; %Initial ECI vector in km or km/s
+a0 = (OE0(1)/1000); %Initial Semi Major Axis in km
+
+Tapprox = seconds(2*pi*sqrt(a0^3/muE)); %Approximate obit period for estimating simulation time
+T0 = datetime(2024,01,25,22,30,25,520); %Initial Simulated Time
+Tf = T0+Tapprox*NOrbitSim; %Final Simulated Time
+T_SIM = (T0:delT:Tf).';
+
+% Please download the lunar orbit data based on T0 and Tf from JPL
+% ephemrides database: https://ssd.jpl.nasa.gov/horizons.cgi#top
+DataName = 'LunaECI.txt'; %Data Input Name
+LunarData = DataReader(DataName); %km & km/s
+
+Q = ProcessNoise(M);
+R = ObsNoise(M);
+%%
 mu0 = zeros(N,1);
 sigma0 = .01*I;
-Tf = 100;
+
 Xtrue(:,1) = mu0;
 tic
-for t = 1:delT:Tf
-    %Noise & Control
+for t = 1:numel(T_SIM)  
+    %Loop over time (we use t as an idx to access data in matrix)
+    T = T_SIM(t); %Extract real time
+    
     W(:,t) = sqrtm(Q)*randn(N,1);
-    V(:,t) = sqrtm(R)*randn(L,1); 
-    u(:,t) = [1, sin(t)];
     %True State Simulation X(t+1) = f(X(t), u(t))+W(t)
-    Xtrue(:,t+1) = StateTrans(Xtrue(:,t),delT)+W(:,t);
+    Xtrue(:,t+1) = StateTrans(Xtrue(:,t),delT,T,LunarData)+W(:,t);
     Y(:,t) = Obs(Xtrue(:,t+1)) + V(:,t); %Compute observation from true state
     
     %Begin Prediction
@@ -33,7 +53,7 @@ for t = 1:delT:Tf
     end
     
     for j = 1:2*N+1
-        Xpre_bar{t}(:,j) = StateTrans(Xsigma{t}(:,j), delT);
+        Xpre_bar{t}(:,j) = StateTrans(Xsigma{t}(:,j), delT,T,LunarData);
     end
     [mu_pre(:,t),sig_pre{t}] = invUT(Xpre_bar{t});
     sig_pre{t} = sig_pre{t} + Q;

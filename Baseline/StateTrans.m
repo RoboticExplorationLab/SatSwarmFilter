@@ -1,26 +1,24 @@
-function X1 = StateTrans(X0,delT)
-%%%%%%%%%%%%%%%% Compute Dynamics of ROE
-%Input: 
-%       X - ECI State Vector at Current Timestep: [r0, v0, r1, v1,..., rn, vn].'
-%       Q - Process Noise Covariance
+function X1 = StateTrans(X0,delT,T,LunarData)
+%%%%%%%%%%%%%%%% 
+% Compute ECI Dynamics with RK4 (Units in km or km/s)
+% Input: 
+%       X0 - ECI State Vector at Current Timestep: [r0, v0, r1, v1,..., rn, vn].'
+%       delT - Time Step
+%       T - Current Real Time
+%       LunarData - Lunar Data Table
 %Output:
 %       X1 - ECI State Vector at Next Timestep: [r0, v0, r1, v1,..., rn, vn].'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-const = s3_constants;
-mu = const.GM.EARTH;
 
-m = 3; %Coordinate Size
-n = length(X0)/(2*m); %Number of targets
+%Interpolated data at t, t+h/2, t+h (Same units as Lunar Data: km & km/s)
+MVec1 = LunarDataInterp(T,LunarData);
+MVec2 = LunarDataInterp(T+delT/2,LunarData);
+MVec3 = LunarDataInterp(T+delT,LunarData);
 
-for idx = 1:n
-    r0vec = X0(2*m*(idx-1)+1 : 2*m*(idx-1)+m); %Position vector
-    v0vec = X0(2*m*(idx-1)+m+1 : 2*m*idx); %Velocity vector
-    
-    r0norm = norm(r0vec);
-    avec = mu/(r0norm^3)*r0vec;
-    v1vec = v0vec + avec*delT;
-    r1vec = r0vec + v0vec*delT + avec/2*delT^2;
-    
-    X1(2*m*(idx-1)+m+1 : 2*m*idx) = v1vec; %Update velocity
-    X1(2*m*(idx-1)+1 : 2*m*(idx-1)+m) = r1vec; %Update position
-end
+delTm = seconds(delT); %Convert any timestep value to seconds
+k1 = delTm*Dynamics(X0,MVec1);
+k2 = delTm*Dynamics(X0+k1/2,MVec2);
+k3 = delTm*Dynamics(X0+k2/2,MVec2);
+k4 = delTm*Dynamics(X0+k3,MVec3);
+
+X1 = X0 + (k1+2*k2+3*k3+k4)/6; %Runge-Kutta 4th Order Method
