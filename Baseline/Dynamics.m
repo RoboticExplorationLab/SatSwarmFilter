@@ -18,7 +18,7 @@ end
 m = 3; %Coordinate Size
 n = length(x)/(2*m); %Number of targets
 
-for idx = 1:n
+for idx = 1:n %Isolate each target separately
     rivec = x(2*m*(idx-1)+1 : 2*m*(idx-1)+m); %Position vector in km
     vivec = x(2*m*(idx-1)+m+1 : 2*m*idx,:); %Velocity vector in km/s
     xdot(2*m*(idx-1)+1 : 2*m*(idx-1)+m,:) = vivec; %Position derivative in km/s

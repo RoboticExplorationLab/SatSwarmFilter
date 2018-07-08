@@ -15,8 +15,8 @@ muE = const.GM.EARTH/(1e3)^3; %km^3/s^2
 muM = const.GM.MOON/(1e3)^3; %km^3/s^2
 
 OE0 = [243729.554542e3,0.598335,51.975,61.110,247.345,0.000]; %Initial OE for hub in m
-X0 = s3_state_keptocart(OE0, 1)/1e3; %Initial ECI vector in km or km/s
-a0 = (OE0(1)/1000); %Initial Semi Major Axis in km
+Xhub0 = s3_state_keptocart(OE0, 1)/1e3; %Initial ECI vector of hub in km or km/s
+a0 = (OE0(1)/1000); %Initial Semi Major Axis for hub in km
 
 Tapprox = seconds(2*pi*sqrt(a0^3/muE)); %Approximate obit period for estimating simulation time
 T0 = datetime(2024,01,25,22,30,25,520); %Initial Simulated Time
@@ -30,11 +30,20 @@ LunarData = DataReader(DataName); %km & km/s
 
 Q = ProcessNoise(M);
 R = ObsNoise(M);
+
+
 %%
+X0 = SampleGen(OE0,M); %Sample ECI vecotrs for all children but hub
+X0{1} = Xhub0; %Input hub
+
+Xtrue(:,1) = cell2mat(X0.');
+mu0 = Xtrue(:,1) + sqrtm(Q)*randn(N,1);
+%%
+
 mu0 = zeros(N,1);
 sigma0 = .01*I;
 
-Xtrue(:,1) = mu0;
+Xtrue(:,1) = X0;
 tic
 for t = 1:numel(T_SIM)  
     %Loop over time (we use t as an idx to access data in matrix)
