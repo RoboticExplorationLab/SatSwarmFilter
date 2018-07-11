@@ -31,19 +31,13 @@ LunarData = DataReader(DataName); %km & km/s
 Q = ProcessNoise(M);
 R = ObsNoise(M);
 
-
-%%
 X0 = SampleGen(OE0,M); %Sample ECI vecotrs for all children but hub
 X0{1} = Xhub0; %Input hub
 
 Xtrue(:,1) = cell2mat(X0.');
 mu0 = Xtrue(:,1) + sqrtm(Q)*randn(N,1);
+sigma0 = Q;
 %%
-
-mu0 = zeros(N,1);
-sigma0 = .01*I;
-
-Xtrue(:,1) = X0;
 tic
 for t = 1:numel(T_SIM)  
     %Loop over time (we use t as an idx to access data in matrix)

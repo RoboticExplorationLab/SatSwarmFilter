@@ -45,23 +45,23 @@ end
 
 W = zeros(N);
 delTNum = seconds(delT);
+f2 = zeros(N);
 for i =1:numel(T_SIM)-1
     T1 = T_SIM(i); %Gram integration lb
     T2 = T_SIM(i+1); %Gram integration ub
     
     [f1,C1{i}] = NumIntA(T1, T2, @ACGenT); %1st order term of Peano-Baker series and C(t)
-    f2 = NumIntA1(T1, T2, @ACGenT); %2nd order term of Peano-Baker series
+%     f2 = NumIntA1(T1, T2, @ACGenT); %2nd order term of Peano-Baker series
     
     if i == 1
         Phi{i} = (I+f1+f2); %Phi(t1,t0)
     else
         Phi{i} = (I+f1+f2)*Phi{i-1}; %Phi(t2,t0) = Phi(t2,t1)*Phi(t1,t0)
     end
-    
     W = W+Phi{i}.'*C1{i}.'*C1{i}*Phi{i}*delTNum;
 end
-
-isSin = ~logical(det(W));
+fprintf('PROCESS COMPLETED\n')
+% isSin = ~logical(det(W));
 %%
 for i = 1:M
     plot3(Xtrue(3*(i-1)+1,:),Xtrue(3*(i-1)+2,:),Xtrue(3*(i-1)+3,:))

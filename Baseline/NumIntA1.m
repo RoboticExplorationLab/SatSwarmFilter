@@ -19,8 +19,8 @@ TstepNum = seconds(Tstep); %Time step in seconds (num format) for outer integral
 [A0, ~] = At(Tmin);
 f2 = zeros(size(A0*A0));
 for i = 1:n-1
-    Aint = NumIntA(Tmin, Tvec(i), At); %Inner integral
     T = Tvec(i)+ Tstep/2; %Midpoint quadrature rule (datetime format)
+    Aint = NumIntA(Tmin, T, At); %Inner integral
     [A,~] = At(T); %Compute A matrix (1/s)
     f2 = f2 + A*Aint*TstepNum; %Integration (num format)
 end
