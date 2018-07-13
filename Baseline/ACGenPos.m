@@ -18,9 +18,10 @@ if isrow(MVec)
 end
 m = 3;
 n = length(x)/(2*m); %Number of targets
-I = eye(3); %Identity matrix
-Z = zeros(3); %Zero matrix fo A
-r0 = x(1:3); %Hub position
+I = eye(m); %Identity matrix
+Z = zeros(m); %Zero matrix fo A
+r0 = x(1:m); %Hub position
+
 TotL = length(x); %Total width of the C matrix for zero padding (6 for identity matrix)
 C = blkdiag(eye(3),eye(3)); %Hub observation derivative
 C = padarray(C,[0,TotL - size(C,2)],'post');
@@ -33,7 +34,12 @@ for idx = 1:n
     rMnorm = norm(rMvec); %Distance between moon and satellite
     rEnorm = norm(rivec); %Distance between earth and satellite
     
-    dAi = muM*(3*(rivec-rMvec)*(rivec-rMvec).'-I)/rMnorm^3+muE*(I-3*(rivec*rivec.'))/rEnorm^3; %dAi    
+    %A Computation
+    dA1 = muM*(3*rivec*(rivec-rMvec).'-I*rMnorm^2)/rMnorm^5;
+    dA2 = -3*muM*rMvec*(rivec-rMvec).'/rMnorm^5;
+    dA3 = muE*I/rEnorm^3 - 3*muE*(rivec*rivec.')/rEnorm^5;
+    dAi = dA1 +dA2 + dA3; %dAi
+    dAi = dAi*3600; %Convert to min^-2
     blkAi{idx} = [Z,I;dAi,Z]; %Block matrices
     
     %C computation

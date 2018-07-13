@@ -1,4 +1,4 @@
-function xdot = Dynamics(x,MVec)
+function xdot = DynamicsFun(x,MVec)
 %%%%%%%%%%%%%%%% 
 % Derivative of ECI Vector
 % Input: 

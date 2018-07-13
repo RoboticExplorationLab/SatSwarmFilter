@@ -1,16 +1,16 @@
 clear all
 clc
-beep on
 N0 = 3; %Size of each target state
 M = 2; %Number of total ships
 N = 2*M*N0; %Size of total state
 I = eye(N);
 L = M*N0; %Size of observation
 
-delT = minutes(10); %Timestep in minutes
+delT = 60*minutes(1); %Timestep
 lambda = 2; %UKF parameter
 NOrbitSim = 1; %Number of orbits to be simulated (Only 1 for Obs Gram)
-global muE muM Xtrue T_SIM LunarData
+global muE muM 
+global T_SIM LunarData Xtrue Y
 const = s3_constants;
 muE = const.GM.EARTH/(1e3)^3; %km^3/s^2
 muM = const.GM.MOON/(1e3)^3; %km^3/s^2
@@ -43,30 +43,17 @@ delTNum = seconds(delT);
 for t = 1:numel(T_SIM)  %Compute true positions at each timestep
     T = T_SIM(t); %Extract real time
     W(:,t) = sqrtm(Q)*randn(N,1); %Process Noise
+    V(:,t) = sqrtm(R)*randn(M-1+2*N0,1); %Observation Noise
     
-    Xtrue(:,t+1) = StateTrans(Xtrue(:,t),delT,T,LunarData)+W(:,t); %Compute true state for each timestep  
+    Xtrue(:,t+1) = StateTrans(Xtrue(:,t),delT,T,LunarData)+W(:,t); %Compute true state for each timestep
+    Y(:,t) = Obs(Xtrue(:,t+1))+V(:,t); %Compute observation from true state
 end
-fprintf('Simulation Completed\n')
-%% Compute Gramian
-delT1 = duration(60*seconds(1));
-T_Gram = (T0:delT1:Tf).'; 
-delTNum = seconds(delT1);
-k = 1;
-for t = 1:numel(T_Gram)
-    T = T_Gram(t);
-    [At{t}, C{t}] = ACGenT(T);
-    Phi{t+1} = exp(At{t}*delTNum)*Phi{t};
-%     if At{t}
-%         k = k+1
-%     end
-end
-fprintf('State Transition Completed\n')
-beep
-% isSin = ~logical(det(W));
-%%
 %% Plotting
 for i = 1:M
     plot3(Xtrue(3*(i-1)+1,:),Xtrue(3*(i-1)+2,:),Xtrue(3*(i-1)+3,:))
     hold on
 end
-plot3(LunarData{2}(:,1),LunarData{2}(:,2),LunarData{2}(:,3))
+fprintf('Simulation Completed\n')
+%% Batch filter
+X0Guess = lsqnonlin(@BatchFun,Xtrue(:,1));
+fprintf('Completed\n')
